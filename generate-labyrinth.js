@@ -1,57 +1,49 @@
 const fs = require('fs');
-const path = require('path');
 
-// GitHub'ın parser'larını yoracak klasör sayısı
-const NUM_FOLDERS = 400; 
-const baseDir = path.join(__dirname, 'monorepo-hell');
+const DEP_DEPTH = 2000; // 3000 seviye iç içe!
+console.log(`İç içe ${DEP_DEPTH} seviye derinliğinde package-lock.json oluşturuluyor...`);
 
-if (!fs.existsSync(baseDir)) {
-    fs.mkdirSync(baseDir);
+const lockfile = {
+  name: "deep-nested-timeout-tester",
+  version: "1.0.0",
+  lockfileVersion: 1,
+  requires: true,
+  dependencies: {}
+};
+
+let currentLevel = lockfile.dependencies;
+
+// İç içe ağaç (Matruşka gibi) oluşturuyoruz
+for (let i = 0; i < DEP_DEPTH; i++) {
+  const pkgName = `nested-package-${i}`;
+  
+  currentLevel[pkgName] = {
+    version: "1.0.0",
+    resolved: `https://registry.npmjs.org/${pkgName}/-/${pkgName}-1.0.0.tgz`,
+    integrity: "sha512-mockhash12345",
+    requires: {},
+    dependencies: {}
+  };
+
+  // Bir sonraki paket, bu paketin requires listesine ekleniyor
+  if (i < DEP_DEPTH - 1) {
+    currentLevel[pkgName].requires[`nested-package-${i + 1}`] = "1.0.0";
+  }
+
+  // Referansı bir alt seviyeye taşı
+  currentLevel = currentLevel[pkgName].dependencies;
 }
 
-console.log("Labirent oluşturuluyor, lütfen bekleyin...");
+fs.writeFileSync('package-lock.json', JSON.stringify(lockfile, null, 2));
 
-for (let i = 0; i < NUM_FOLDERS; i++) {
-    const folderPath = path.join(baseDir, `service-block-${i}`);
-    fs.mkdirSync(folderPath);
+// Eşlik eden basit bir package.json
+const packageJson = {
+  name: "deep-nested-timeout-tester",
+  version: "1.0.0",
+  dependencies: {
+    "nested-package-0": "1.0.0"
+  }
+};
+fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
 
-    // 1. Node.js (NPM) Dosyası
-    const packageJson = {
-        name: `service-block-${i}`,
-        dependencies: {
-            "lodash": "*",
-            "express": "*",
-            "react": "*"
-        }
-    };
-    fs.writeFileSync(path.join(folderPath, 'package.json'), JSON.stringify(packageJson, null, 2));
-
-    // 2. Python (Pip) Dosyası
-    const requirementsTxt = `requests==2.28.1\nnumpy==1.23.4\npandas==1.5.0\nflask==2.2.2\n`;
-    fs.writeFileSync(path.join(folderPath, 'requirements.txt'), requirementsTxt);
-
-    // 3. Java (Maven) Dosyası - XML okumak parser'ları her zaman yorar
-    const pomXml = `
-<project xmlns="http://maven.apache.org/POM/4.0.0">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.mock.repo</groupId>
-  <artifactId>service-block-${i}</artifactId>
-  <version>1.0</version>
-  <dependencies>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-      <version>2.7.4</version>
-    </dependency>
-  </dependencies>
-</project>
-    `.trim();
-    fs.writeFileSync(path.join(folderPath, 'pom.xml'), pomXml);
-
-    // 4. Ruby (Bundler) Dosyası
-    const gemfile = `source 'https://rubygems.org'\ngem 'rails', '7.0.4'\ngem 'pg'\n`;
-    fs.writeFileSync(path.join(folderPath, 'Gemfile'), gemfile);
-}
-
-console.log(`✅ Toplam ${NUM_FOLDERS} klasör ve ${NUM_FOLDERS * 4} adet farklı ekosistem manifest dosyası üretildi!`);
-console.log("Klasör adı: 'monorepo-hell'");
+console.log("✅ Derin bağımlılık labirenti oluşturuldu!");
