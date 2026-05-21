@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const DEP_DEPTH = 2000; // 3000 seviye iç içe!
+const DEP_DEPTH = 2250; // 3000 seviye iç içe!
 console.log(`İç içe ${DEP_DEPTH} seviye derinliğinde package-lock.json oluşturuluyor...`);
 
 const lockfile = {
